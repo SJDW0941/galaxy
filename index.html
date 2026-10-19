@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY GALAXY</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; }
+    body { background: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: white; }
+    
+    .phone {
+      width: 360px; height: 740px; background: #000; border-radius: 44px; position: relative; overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 12px #1e293b, 0 0 0 14px #334155;
+    }
+
+    .status-bar { height: 36px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; z-index: 1000; position: absolute; top:0; width:100%; color:#fff; }
+    .camera-hole { width: 12px; height: 12px; background: #000; border-radius: 50%; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1001; border: 1px solid #1e293b; }
+
+    /* --- 0. 잠금 화면 --- */
+    .lock-screen {
+      position: absolute; top:0; left:0; width:100%; height:100%; z-index: 900;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 27, 75, 0.8) 100%), url('lockscreen.jpg') center/cover no-repeat;
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 60px 20px 40px;
+    }
+    .lock-clock { text-align: center; }
+    .lock-time { font-size: 58px; font-weight: 200; }
+    .lock-date { font-size: 15px; opacity: 0.9; margin-top: -4px; }
+    
+    .pin-container { text-align: center; display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .pin-title { font-size: 13px; margin-bottom: 12px; opacity: 0.8; letter-spacing: -0.5px; }
+    .pin-dots { display: flex; gap: 12px; margin-bottom: 20px; height: 16px; align-items: center; }
+    .pin-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.7); transition: background 0.15s; }
+    .pin-dot.filled { background: #fff; }
+
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 24px; width: 220px; }
+    .key-btn {
+      width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+      display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: 500; cursor: pointer;
+    }
+    .key-btn:active { background: rgba(255,255,255,0.35); }
+
+    /* --- 홈 화면 --- */
+    .home-screen { width: 100%; height: 100%; padding: 46px 16px 36px; background: linear-gradient(180deg, #1e1b4b 0%, #311b92 50%, #0f172a 100%); display: flex; flex-direction: column; justify-content: space-between; }
+    .widget-clock { text-align: center; margin-top: 4px; }
+    .widget-clock .time { font-size: 46px; font-weight: 200; letter-spacing: -1px; }
+    .widget-clock .date { font-size: 13px; opacity: 0.8; margin-top: -4px; }
+
+    /* 10월 미니 달력 위젯 */
+    .mini-calendar-widget {
+      background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); border-radius: 20px;
+      padding: 10px 12px; margin: 8px 6px 0; border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .cal-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; margin-bottom: 6px; padding: 0 4px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 10px; }
+    .cal-day-name { color: rgba(255, 255, 255, 0.6); font-size: 9px; padding-bottom: 2px; }
+    .cal-date-cell { padding: 3px 0; border-radius: 50%; color: rgba(255, 255, 255, 0.85); position: relative; }
+    .cal-date-cell.sun { color: #f87171; }
+    .cal-date-cell.sat { color: #60a5fa; }
+    .cal-date-cell.event-day { background: rgba(255, 255, 255, 0.25); font-weight: bold; color: #fff; }
+    .cal-date-cell.active-today { background: #3b82f6; color: #fff; font-weight: bold; box-shadow: 0 0 6px rgba(59, 130, 246, 0.6); }
+
+    .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 10px; padding: 10px 4px 0; }
+    .app-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .app-icon {
+      width: 54px; height: 54px; border-radius: 16px; display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); transition: transform 0.1s; position: relative; overflow: hidden;
+    }
+    .app-item:active .app-icon { transform: scale(0.92); }
+    .app-name { font-size: 10.5px; margin-top: 5px; opacity: 0.9; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+    /* One UI 디자인 앱 아이콘 */
+    .icon-gallery { background: linear-gradient(135deg, #ff8c42, #ff5e62); }
+    .icon-kakao { background: #191919; }
+    .icon-insta { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%); }
+    .icon-naver { background: #03cf5d; }
+    .icon-message { background: linear-gradient(135deg, #2ecc71, #10b981); }
+    .icon-phone { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .icon-clock { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.1); }
+    .icon-gemini { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.15); }
+
+    .app-window {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #121212;
+      z-index: 200; display: none; flex-direction: column; animation: openApp 0.2s ease-out; padding-top: 36px;
+    }
+    @keyframes openApp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .app-header { height: 50px; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #27272a; font-size: 16px; font-weight: 600; background:#121212; }
+    .app-close-btn { background: none; border: none; color: #a1a1aa; font-size: 20px; cursor: pointer; padding: 4px; }
+    .app-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+    /* 갤러리 */
+    .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .gallery-grid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; cursor: pointer; }
+    .photo-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 800; display: none; justify-content: center; align-items: center; }
+    .photo-modal img { max-width: 95%; max-height: 80%; border-radius: 8px; }
+
+    /* 인스타그램 */
+    .insta-header { height: 48px; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #262626; }
+    .insta-logo { font-size: 20px; font-weight: bold; font-style: italic; }
+    .insta-profile-bar { display: flex; align-items: center; padding: 12px 16px; background: #000; border-bottom: 1px solid #1a1a1a; }
+    .profile-thumb { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 2px solid #e1306c; }
+    .profile-info { display: flex; flex-direction: column; }
+    .profile-id { font-weight: bold; font-size: 14px; }
+    .profile-sub { font-size: 12px; color: #a8a8a8; margin-top: 2px; }
+    .insta-post { background: #000; margin-bottom: 16px; border-bottom: 1px solid #1f1f1f; padding-bottom: 12px; }
+    .post-user { display: flex; align-items: center; padding: 10px 12px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+    .user-id { font-weight: 600; font-size: 13px; }
+    .post-img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
+    .post-actions { padding: 10px 12px 6px; font-size: 18px; display: flex; gap: 12px; }
+    .post-content { padding: 0 12px; font-size: 13px; line-height: 1.4; color: #f5f5f5; }
+    .post-content .bold { font-weight: bold; margin-right: 6px; }
+
+    /* 카카오톡 다크모드 적용 */
+    .kakao-header { height: 48px; background: #191919; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; font-weight: bold; border-bottom: 1px solid #2a2a2a; }
+    .kakao-body { background: #121212; color: #fff; padding: 0; }
+    .kakao-profile-section { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #222; }
+    .kakao-my-avatar { width: 48px; height: 48px; border-radius: 18px; object-fit: cover; margin-right: 12px; }
+    .kakao-my-info { display: flex; flex-direction: column; }
+    .kakao-my-name { font-weight: bold; font-size: 15px; color: #fff; }
+    .kakao-my-status { font-size: 12px; color: #aaa; margin-top: 2px; }
+    .kakao-section-title { font-size: 11px; color: #777; padding: 8px 16px 4px; background: #181818; }
+    .kakao-friend-item { display: flex; align-items: center; padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #1a1a1a; }
+    .kakao-friend-item:active { background: #222; }
+    .kakao-friend-avatar { width: 42px; height: 42px; border-radius: 16px; object-fit: cover; margin-right: 12px; }
+    .kakao-friend-info { display: flex; flex-direction: column; flex: 1; }
+    .kakao-friend-name { font-size: 14px; font-weight: 500; color: #fff; }
+    .kakao-friend-status { font-size: 12px; color: #888; margin-top: 2px; }
+    
+    .kakao-tabbar { height: 48px; background: #191919; border-top: 1px solid #2a2a2a; display: flex; justify-content: space-around; align-items: center; position: absolute; bottom: 32px; width: 100%; }
+    .kakao-tab { font-size: 12px; color: #888; cursor: pointer; text-align: center; flex: 1; }
+    .kakao-tab.active { color: #fee500; font-weight: bold; }
+
+    /* 카카오톡 대화방 다크모드 (검은색 배경 + 노란색/진회색 말풍선) */
+    .chat-room-window { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 500; display: none; flex-direction: column; padding-top: 36px; }
+    .chat-header { height: 48px; background: #191919; display: flex; align-items: center; padding: 0 12px; font-weight: bold; font-size: 15px; color:#fff; border-bottom: 1px solid #2a2a2a; }
+    .chat-back-btn { background: none; border: none; font-size: 18px; cursor: pointer; margin-right: 10px; color:#fff; }
+    .chat-messages { flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #000000; }
+    
+    .date-divider { text-align: center; margin: 10px 0; font-size: 11px; color: #888; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 10px; align-self: center; }
+    
+    .msg-group { display: flex; flex-direction: column; margin-bottom: 2px; }
+    .msg-group.outgoing { align-items: flex-end; }
+    .msg-group.incoming { align-items: flex-start; }
+
+    .bubble-wrapper { display: flex; align-items: flex-end; gap: 4px; max-width: 80%; }
+    .msg-group.outgoing .bubble-wrapper { flex-direction: row-reverse; }
+
+    .bubble { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; word-break: break-all; }
+    .msg-group.incoming .bubble { background: #2a2a2a; color: #ffffff; }
+    .msg-group.outgoing .bubble { background: #fee500; color: #000000; }
+
+    .timestamp { font-size: 10px; color: #777; white-space: nowrap; }
+
+    .chat-input-area { height: 50px; background: #191919; display: flex; align-items: center; padding: 0 10px; gap: 8px; margin-bottom: 32px; border-top: 1px solid #2a2a2a; }
+    .chat-input { flex: 1; height: 36px; background: #2a2a2a; border: 1px solid #333; border-radius: 18px; padding: 0 12px; outline: none; font-size: 13px; color: #fff; }
+    .chat-send-btn { background: #fee500; border: none; padding: 8px 14px; border-radius: 18px; font-weight: bold; font-size: 12px; cursor: pointer; color:#000; }
+
+    /* 네이버 앱 */
+    .naver-search-box { background: #03cf5d; padding: 16px 12px; position: relative; }
+    .naver-input-wrap { background: #fff; border-radius: 8px; height: 42px; display: flex; align-items: center; padding: 0 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .naver-input { border: none; outline: none; width: 100%; font-size: 14px; color: #000; cursor: pointer; }
+    
+    .search-history-dropdown {
+      position: absolute; top: 66px; left: 12px; right: 12px; background: #fff; color: #000; border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; flex-direction: column-reverse; z-index: 100; overflow: hidden;
+    }
+    .history-header { display: flex; justify-content: space-between; padding: 10px 14px; font-size: 12px; color: #888; border-top: 1px solid #eee; background: #fafafa; }
+    .history-item { padding: 12px 14px; font-size: 13.5px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .history-item:active { background: #f8f8f8; }
+
+    /* 전화 앱 */
+    .phone-display { height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 300; letter-spacing: 1px; color: #fff; }
+    .dial-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 28px; padding: 10px 36px; justify-items: center; }
+    .dial-btn { width: 62px; height: 62px; border-radius: 50%; background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+    .dial-btn:active { background: #333; }
+    .dial-num { font-size: 22px; font-weight: 400; color: #fff; }
+    .dial-sub { font-size: 9px; color: #888; margin-top: -2px; }
+    .call-action-row { display: flex; justify-content: center; margin-top: 16px; }
+    .call-btn { width: 62px; height: 62px; border-radius: 50%; background: #10b981; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+
+    .phone-tabbar { height: 48px; background: #18181b; border-top: 1px solid #27272a; display: flex; justify-content: space-around; align-items: center; position: absolute; bottom: 32px; width: 100%; }
+    .phone-tab { font-size: 12px; color: #71717a; cursor: pointer; text-align: center; flex: 1; }
+    .phone-tab.active { color: #3b82f6; font-weight: bold; }
+
+    .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #27272a; }
+    .recent-name { font-size: 14px; font-weight: 500; color: #fff; }
+    .recent-name.missed { color: #ef4444; }
+    .recent-time { font-size: 12px; color: #71717a; }
+    .recent-date-title { font-size: 11px; color: #3b82f6; padding: 12px 16px 4px; background: #09090b; font-weight: 600; }
+
+    /* 메시지 앱 */
+    .msg-thread-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #27272a; cursor: pointer; }
+    .msg-thread-item:active { background: #1f1f23; }
+    .msg-avatar { width: 44px; height: 44px; border-radius: 50%; background: #3b82f6; color: #fff; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 16px; margin-right: 12px; flex-shrink: 0; }
+    .msg-thread-info { flex: 1; overflow: hidden; }
+    .msg-thread-header { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .msg-thread-name { font-size: 14px; font-weight: 600; color: #fff; }
+    .msg-thread-time { font-size: 11px; color: #71717a; }
+    .msg-thread-preview { font-size: 12px; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Gemini 앱 전용 스타일 */
+    .gemini-user-msg { background: #1e293b; color: #e2e8f0; align-self: flex-end; border-radius: 14px 14px 2px 14px; padding: 10px 14px; font-size: 13px; max-width: 85%; margin-bottom: 8px; }
+    .gemini-ai-msg { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: #f1f5f9; align-self: flex-start; border-radius: 14px 14px 14px 2px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; max-width: 95%; margin-bottom: 14px; }
+    .gemini-ai-msg ul, .gemini-ai-msg ol { padding-left: 16px; margin: 6px 0; }
+    .gemini-ai-msg li { margin-bottom: 4px; }
+
+    /* 수신 전화 알림 */
+    .call-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999; display: none; flex-direction: column; justify-content: space-between; align-items: center; padding: 80px 20px 60px; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .call-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #3b82f6; margin-bottom: 16px; }
+    .call-actions { display: flex; gap: 50px; width: 100%; justify-content: center; }
+    .call-action-btn { width: 64px; height: 64px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 26px; cursor: pointer; }
+    .call-reject { background: #ef4444; color: white; }
+    .call-accept { background: #10b981; color: white; }
+
+    /* 갤럭시 네비게이션 바 */
+    .nav-bar { height: 32px; display: flex; justify-content: space-around; align-items: center; background: rgba(0,0,0,0.8); position: absolute; bottom: 0; width: 100%; z-index: 1000; }
+    .nav-btn { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.7); border-radius: 3px; cursor: pointer; }
+    .nav-home { border-radius: 50%; }
+  </style>
+</head>
+<body>
+
+  <div class="phone">
+    <div class="camera-hole"></div>
+    <div class="status-bar">
+      <span id="current-time">20:00</span>
+      <span>LTE 🔋 85%</span>
+    </div>
+
+    <!-- 0. 잠금 화면 -->
+    <div id="lock-screen" class="lock-screen">
+      <div class="lock-clock">
+        <div class="lock-time" id="lock-time">20:00</div>
+        <div class="lock-date">10월 20일 (화)</div>
+      </div>
+
+      <div class="pin-container">
+        <div class="pin-title" id="pin-title">비밀번호 4자리를 입력하세요</div>
+        <div class="pin-dots">
+          <div class="pin-dot" id="dot-0"></div>
+          <div class="pin-dot" id="dot-1"></div>
+          <div class="pin-dot" id="dot-2"></div>
+          <div class="pin-dot" id="dot-3"></div>
+        </div>
+
+        <div class="keypad-grid">
+          <div class="key-btn" onclick="pressPin('1')">1</div>
+          <div class="key-btn" onclick="pressPin('2')">2</div>
+          <div class="key-btn" onclick="pressPin('3')">3</div>
+          <div class="key-btn" onclick="pressPin('4')">4</div>
+          <div class="key-btn" onclick="pressPin('5')">5</div>
+          <div class="key-btn" onclick="pressPin('6')">6</div>
+          <div class="key-btn" onclick="pressPin('7')">7</div>
+          <div class="key-btn" onclick="pressPin('8')">8</div>
+          <div class="key-btn" onclick="pressPin('9')">9</div>
+          <div></div>
+          <div class="key-btn" onclick="pressPin('0')">0</div>
+          <div class="key-btn" style="font-size:16px;" onclick="clearPin()">취소</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 홈 화면 -->
+    <div class="home-screen">
+      <div class="widget-clock">
+        <div class="time" id="widget-time">20:00</div>
+        <div class="date">10월 20일 (화)</div>
+      </div>
+
+      <!-- 10월 미니 달력 위젯 -->
+      <div class="mini-calendar-widget">
+        <div class="cal-header">
+          <span>2026년 10월</span>
+          <span style="font-size:10px; color:rgba(255,255,255,0.7);">OCTOBER</span>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-day-name">일</div>
+          <div class="cal-day-name">월</div>
+          <div class="cal-day-name">화</div>
+          <div class="cal-day-name">수</div>
+          <div class="cal-day-name">목</div>
+          <div class="cal-day-name">금</div>
+          <div class="cal-day-name">토</div>
+
+          <div></div><div></div><div></div><div></div>
+          <div class="cal-date-cell event-day">1</div>
+          <div class="cal-date-cell">2</div>
+          <div class="cal-date-cell sat">3</div>
+
+          <div class="cal-date-cell sun">4</div>
+          <div class="cal-date-cell event-day">5</div>
+          <div class="cal-date-cell event-day">6</div>
+          <div class="cal-date-cell">7</div>
+          <div class="cal-date-cell">8</div>
+          <div class="cal-date-cell event-day">9</div>
+          <div class="cal-date-cell sat">10</div>
+
+          <div class="cal-date-cell sun">11</div>
+          <div class="cal-date-cell">12</div>
+          <div class="cal-date-cell">13</div>
+          <div class="cal-date-cell event-day">14</div>
+          <div class="cal-date-cell">15</div>
+          <div class="cal-date-cell event-day">16</div>
+          <div class="cal-date-cell sat">17</div>
+
+          <div class="cal-date-cell sun">18</div>
+          <div class="cal-date-cell">19</div>
+          <div class="cal-date-cell active-today">20</div>
+          <div class="cal-date-cell">21</div>
+          <div class="cal-date-cell">22</div>
+          <div class="cal-date-cell">23</div>
+          <div class="cal-date-cell sat">24</div>
+
+          <div class="cal-date-cell sun">25</div>
+          <div class="cal-date-cell">26</div>
+          <div class="cal-date-cell">27</div>
+          <div class="cal-date-cell">28</div>
+          <div class="cal-date-cell">29</div>
+          <div class="cal-date-cell">30</div>
+          <div class="cal-date-cell sat">31</div>
+        </div>
+      </div>
+
+      <div class="app-grid">
+        <div class="app-item" onclick="openApp('gallery-app')">
+          <div class="app-icon icon-gallery">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="4" fill="#fff" fill-opacity="0.2"/>
+              <circle cx="8.5" cy="8.5" r="2.5" fill="#fff"/>
+              <path d="M4 18L9 12L12 16L16 10L20 18H4Z" fill="#fff"/>
+            </svg>
+          </div>
+          <span class="app-name">갤러리</span>
+        </div>
+
+        <div class="app-item" onclick="openApp('kakao-app')">
+          <div class="app-icon icon-kakao">
+            <svg width="28" height="28" viewBox="0 0 24 24">
+              <path d="M12 4C7.58 4 4 6.69 4 10C4 12.14 5.4 14.02 7.55 15.11L6.7 18.25C6.6 18.6 7 18.88 7.3 18.68L11.08 16.15C11.38 16.18 11.69 16.2 12 16.2C16.42 16.2 20 13.51 20 10.2C20 6.69 16.42 4 12 4Z" fill="#FEE500"/>
+            </svg>
+          </div>
+          <span class="app-name">카카오톡</span>
+        </div>
+
+        <div class="app-item" onclick="openApp('insta-app')">
+          <div class="app-icon icon-insta">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5"/>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+          </div>
+          <span class="app-name">인스타그램</span>
+        </div>
+
+        <div class="app-item" onclick="openApp('naver-app')">
+          <div class="app-icon icon-naver">
+            <span style="font-size:22px; font-weight:900; color:#fff; font-family:sans-serif;">N</span>
+          </div>
+          <span class="app-name">네이버</span>
+        </div>
+
+        <div class="app-item" onclick="openApp('msg-app')">
+          <div class="app-icon icon-message">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff">
+              <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM9 11C8.45 11 8 10.55 8 10C8 9.45 8.45 9 9 9C9.55 9 10 9.45 10 10C10 10.55 9.55 11 9 11ZM13 11C12.45 11 12 10.55 12 10C12 9.45 12.45 9 13 9C13.55 9 14 9.45 14 10C14 10.55 13.55 11 13 11ZM17 11C16.45 11 16 10.55 16 10C16 9.45 16.45 9 17 9C17.55 9 18 9.45 18 10C18 10.55 17.55 11 17 11Z"/>
+            </svg>
+          </div>
+          <span class="app-name">메시지</span>
+        </div>
+
+        <div class="app-item" onclick="openApp('phone-app')">
+          <div class="app-icon icon-phone">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
+              <path d="M6.62 10.79C8.06 13.62 10.38 15.94 13.21 17.38L15.41 15.18C15.69 14.9 16.08 14.82 16.43 14.93C17.55 15.3 18.75 15.5 20 15.5C20.55 15.5 21 15.95 21 16.5V20C21 20.55 20.55 21 20 21C10.61 21 3 13.39 3 4C3 3.45 3.45 3 4 3H7.5C8.05 3 8.5 3.45 8.5 4C8.5 5.25 8.7 6.45 9.07 7.57C9.18 7.92 9.1 8.31 8.82 8.59L6.62 10.79Z"/>
+            </svg>
+          </div>
+          <span class="app-name">전화</span>
+        </div>
+
+        <div class="app-item" style="cursor:default;">
+          <div class="app-icon icon-clock">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8">
+              <circle cx="12" cy="12" r="9"/>
+              <polyline points="12 6 12 12 15 14" stroke="#fff"/>
+              <line x1="12" y1="12" x2="16" y2="9" stroke="#ef4444" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <span class="app-name">시계</span>
+        </div>
+
+        <div class="app-item" onclick="openApp('gemini-app')">
+          <div class="app-icon icon-gemini">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C12 7.5 7.5 12 2 12C7.5 12 12 16.5 12 22C12 16.5 16.5 12 22 12C16.5 12 12 7.5 12 2Z" fill="url(#gemini-grad)"/>
+              <defs>
+                <linearGradient id="gemini-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#60a5fa"/>
+                  <stop offset="50%" stop-color="#c084fc"/>
+                  <stop offset="100%" stop-color="#f472b6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="app-name">Gemini</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. 갤러리 앱 -->
+    <div id="gallery-app" class="app-window">
+      <div class="app-header">
+        <span>갤러리 (15)</span>
+        <button class="app-close-btn" onclick="closeApp('gallery-app')">✕</button>
+      </div>
+      <div class="app-body">
+        <div class="gallery-grid">
+          <img src="photo1.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo2.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo3.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo4.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo5.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo6.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo7.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo8.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo9.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo10.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo11.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo12.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo13.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo14.jpg" onclick="zoomPhoto(this.src)">
+          <img src="photo15.jpg" onclick="zoomPhoto(this.src)">
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 인스타그램 앱 -->
+    <div id="insta-app" class="app-window">
+      <div class="insta-header">
+        <span class="insta-logo">Instagram</span>
+        <button class="app-close-btn" onclick="closeApp('insta-app')">✕</button>
+      </div>
+      <div class="app-body" style="padding: 0; background: #000;">
+        <div class="insta-profile-bar">
+          <img src="profile_insta.jpg" class="profile-thumb" alt="프사">
+          <div class="profile-info">
+            <span class="profile-id">d.ddablue</span>
+            <span class="profile-sub">게시물 2개</span>
+          </div>
+        </div>
+        <div class="insta-post">
+          <div class="post-user">
+            <img src="profile_insta.jpg" class="user-avatar" alt="프사">
+            <span class="user-id">d.ddablue</span>
+          </div>
+          <img src="insta1.jpg" class="post-img" alt="게시글1">
+          <div class="post-actions"><span>❤️</span> <span>💬</span> <span>✈️</span></div>
+          <div class="post-content"><span class="bold">d.ddablue</span> 동아리에서 처음 사진 찍은 날</div>
+        </div>
+        <div class="insta-post">
+          <div class="post-user">
+            <img src="profile_insta.jpg" class="user-avatar" alt="프사">
+            <span class="user-id">d.ddablue</span>
+          </div>
+          <img src="insta2.jpg" class="post-img" alt="게시글2">
+          <div class="post-actions"><span>❤️</span> <span>💬</span> <span>✈️</span></div>
+          <div class="post-content"><span class="bold">d.ddablue</span> 내 절친들 싸랑한다이~</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 카카오톡 앱 -->
+    <div id="kakao-app" class="app-window">
+      <div class="kakao-header">
+        <span id="kakao-header-title">친구</span>
+        <button class="app-close-btn" style="color:#fff;" onclick="closeApp('kakao-app')">✕</button>
+      </div>
+      
+      <div id="kakao-tab-friends" class="app-body kakao-body" style="padding-bottom: 60px;">
+        <div class="kakao-profile-section">
+          <img src="profile_kakao.jpg" class="kakao-my-avatar" alt="내프사">
+          <div class="kakao-my-info">
+            <span class="kakao-my-name">윤도운</span>
+            <span class="kakao-my-status"></span>
+          </div>
+        </div>
+        <div class="kakao-section-title">친구 4</div>
+        
+        <div class="kakao-friend-item" onclick="openKakaoChat('내 곰팅이')">
+          <img src="friend1.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <span class="kakao-friend-name">내 곰팅이</span>
+            <span class="kakao-friend-status"></span>
+          </div>
+        </div>
+        <div class="kakao-friend-item" onclick="openKakaoChat('강브라')">
+          <img src="friend2.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <span class="kakao-friend-name">강브라</span>
+            <span class="kakao-friend-status"></span>
+          </div>
+        </div>
+        <div class="kakao-friend-item" onclick="openKakaoChat('원필이형')">
+          <img src="friend3.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <span class="kakao-friend-name">원필이형</span>
+            <span class="kakao-friend-status">❤️</span>
+          </div>
+        </div>
+        <div class="kakao-friend-item" onclick="openKakaoChat('어무이')">
+          <img src="friend4.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <span class="kakao-friend-name">어무이</span>
+            <span class="kakao-friend-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="kakao-tab-chats" class="app-body kakao-body" style="padding-bottom: 60px; display: none;">
+        <div class="kakao-friend-item" onclick="openKakaoChat('내 곰팅이')">
+          <img src="friend1.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <div style="display:flex; justify-content:space-between;">
+              <span class="kakao-friend-name">내 곰팅이</span>
+              <span style="font-size:10px; color:#aaa;">오후 8:26</span>
+            </div>
+            <span class="kakao-friend-status">니 보는 게 쉬는 건데 뭘 전화도</span>
+          </div>
+        </div>
+        <div class="kakao-friend-item" onclick="openKakaoChat('강브라')">
+          <img src="friend2.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <div style="display:flex; justify-content:space-between;">
+              <span class="kakao-friend-name">강브라</span>
+              <span style="font-size:10px; color:#aaa;">10월 16일</span>
+            </div>
+            <span class="kakao-friend-status">네 형^^</span>
+          </div>
+        </div>
+        <div class="kakao-friend-item" onclick="openKakaoChat('어무이')">
+          <img src="friend4.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <div style="display:flex; justify-content:space-between;">
+              <span class="kakao-friend-name">어무이</span>
+              <span style="font-size:10px; color:#aaa;">10월 6일</span>
+            </div>
+            <span class="kakao-friend-status">오야~^^</span>
+          </div>
+        </div>
+        <div class="kakao-friend-item" onclick="openKakaoChat('원필이형')">
+          <img src="friend3.jpg" class="kakao-friend-avatar">
+          <div class="kakao-friend-info">
+            <div style="display:flex; justify-content:space-between;">
+              <span class="kakao-friend-name">원필이형</span>
+              <span style="font-size:10px; color:#aaa;">10월 6일</span>
+            </div>
+            <span class="kakao-friend-status">...내가 잘못한 것 같은데</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kakao-tabbar">
+        <div id="tab-btn-friends" class="kakao-tab active" onclick="switchKakaoTab('friends')">👤 친구</div>
+        <div id="tab-btn-chats" class="kakao-tab" onclick="switchKakaoTab('chats')">💬 채팅</div>
+      </div>
+    </div>
+
+    <!-- 4. 네이버 앱 -->
+    <div id="naver-app" class="app-window" style="background:#f4f5f7;">
+      <div class="app-header" style="background:#03cf5d; color:#fff; border:none;">
+        <span style="font-weight:bold; font-size:18px;">NAVER</span>
+        <button class="app-close-btn" style="color:#fff;" onclick="closeApp('naver-app')">✕</button>
+      </div>
+      <div class="naver-search-box">
+        <div class="naver-input-wrap" onclick="toggleSearchHistory(true)">
+          <span style="color:#03cf5d; font-weight:bold; margin-right:8px;">N</span>
+          <input type="text" id="naver-input" class="naver-input" placeholder="검색어를 입력하세요" readonly>
+        </div>
+        <div id="search-dropdown" class="search-history-dropdown">
+          <div class="history-header">
+            <span>최근 검색어</span>
+            <span style="cursor:pointer;" onclick="toggleSearchHistory(false)">닫기</span>
+          </div>
+          <div class="history-item" onclick="selectSearch('프로포즈')">프로포즈</div>
+          <div class="history-item" onclick="selectSearch('프로포즈 방법')">프로포즈 방법</div>
+          <div class="history-item" onclick="selectSearch('남자 반지')">남자 반지</div>
+          <div class="history-item" onclick="selectSearch('24호...?')">24호...?</div>
+          <div class="history-item" onclick="selectSearch('예식장')">예식장</div>
+          <div class="history-item" onclick="selectSearch('부산 예식장')">부산 예식장</div>
+          <div class="history-item" onclick="selectSearch('가족사진')">가족사진</div>
+          <div class="history-item" onclick="selectSearch('분위기 좋은 식당')">분위기 좋은 식당</div>
+          <div class="history-item" onclick="selectSearch('꽃다발도해야되나...')">꽃다발도해야되나...</div>
+        </div>
+      </div>
+      <div class="app-body" style="color:#333; padding:20px; text-align:center;">
+        <p style="margin-top:40px; color:#666; font-size:14px;">검색창을 누르면 최근 검색 기록이 나타납니다.</p>
+      </div>
+    </div>
+
+    <!-- 5. 전화 앱 -->
+    <div id="phone-app" class="app-window">
+      <div class="app-header">
+        <span>전화</span>
+        <button class="app-close-btn" onclick="closeApp('phone-app')">✕</button>
+      </div>
+      
+      <div id="phone-tab-keypad" class="app-body" style="padding:0; display:flex; flex-direction:column; justify-content:space-between; padding-bottom:60px;">
+        <div class="phone-display" id="phone-dial-display"></div>
+        <div>
+          <div class="dial-pad">
+            <div class="dial-btn" onclick="pressDial('1')"><span class="dial-num">1</span></div>
+            <div class="dial-btn" onclick="pressDial('2')"><span class="dial-num">2</span><span class="dial-sub">ABC</span></div>
+            <div class="dial-btn" onclick="pressDial('3')"><span class="dial-num">3</span><span class="dial-sub">DEF</span></div>
+            <div class="dial-btn" onclick="pressDial('4')"><span class="dial-num">4</span><span class="dial-sub">GHI</span></div>
+            <div class="dial-btn" onclick="pressDial('5')"><span class="dial-num">5</span><span class="dial-sub">JKL</span></div>
+            <div class="dial-btn" onclick="pressDial('6')"><span class="dial-num">6</span><span class="dial-sub">MNO</span></div>
+            <div class="dial-btn" onclick="pressDial('7')"><span class="dial-num">7</span><span class="dial-sub">PQRS</span></div>
+            <div class="dial-btn" onclick="pressDial('8')"><span class="dial-num">8</span><span class="dial-sub">TUV</span></div>
+            <div class="dial-btn" onclick="pressDial('9')"><span class="dial-num">9</span><span class="dial-sub">WXYZ</span></div>
+            <div class="dial-btn" onclick="pressDial('*')"><span class="dial-num">*</span></div>
+            <div class="dial-btn" onclick="pressDial('0')"><span class="dial-num">0</span><span class="dial-sub">+</span></div>
+            <div class="dial-btn" onclick="pressDial('#')"><span class="dial-num">#</span></div>
+          </div>
+          <div class="call-action-row">
+            <div class="call-btn" onclick="makeOutgoingCall()">📞</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="phone-tab-recents" class="app-body" style="padding:0; padding-bottom:60px; display:none;">
+        <div class="recent-date-title">10월 20일 화요일</div>
+        <div class="recent-item"><div><div class="recent-name">내 곰팅이</div><div style="font-size:11px; color:#666;">발신</div></div><div class="recent-time">오후 10:21</div></div>
+        <div class="recent-item"><div><div class="recent-name">엄마</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오전 9:07</div></div>
+
+        <div class="recent-date-title">10월 16일 금요일</div>
+        <div class="recent-item"><div><div class="recent-name">강브라</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오후 6:07</div></div>
+        <div class="recent-item"><div><div class="recent-name">내 곰팅이</div><div style="font-size:11px; color:#666;">발신</div></div><div class="recent-time">오후 5:30</div></div>
+
+        <div class="recent-date-title">10월 14일 수요일</div>
+        <div class="recent-item"><div><div class="recent-name">내 곰팅이</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오후 3:26</div></div>
+        <div class="recent-item"><div><div class="recent-name">김 과장님(ㅗ)</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오전 11:37</div></div>
+        <div class="recent-item"><div><div class="recent-name">자재 최 사장님</div><div style="font-size:11px; color:#666;">발신</div></div><div class="recent-time">오전 10:41</div></div>
+        <div class="recent-item"><div><div class="recent-name">협진계약</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오전 9:12</div></div>
+
+        <div class="recent-date-title">10월 9일 금요일</div>
+        <div class="recent-item"><div><div class="recent-name">내 곰팅이</div><div style="font-size:11px; color:#666;">발신</div></div><div class="recent-time">오후 6:01</div></div>
+
+        <div class="recent-date-title">10월 6일 화요일</div>
+        <div class="recent-item"><div><div class="recent-name">어무이</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오후 8:45</div></div>
+
+        <div class="recent-date-title">10월 5일 월요일</div>
+        <div class="recent-item"><div><div class="recent-name">내 곰팅이</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오후 8:25</div></div>
+
+        <div class="recent-date-title">10월 4일 일요일</div>
+        <div class="recent-item"><div><div class="recent-name missed">원필이 형</div><div style="font-size:11px; color:#ef4444;">부재중 전화</div></div><div class="recent-time" style="color:#ef4444;">오후 3:58</div></div>
+
+        <div class="recent-date-title">10월 1일 목요일</div>
+        <div class="recent-item"><div><div class="recent-name">엄마</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오후 12:47</div></div>
+        <div class="recent-item"><div><div class="recent-name">정과장님</div><div style="font-size:11px; color:#666;">발신</div></div><div class="recent-time">오후 3:07</div></div>
+        <div class="recent-item"><div><div class="recent-name">내 곰팅이</div><div style="font-size:11px; color:#666;">수신</div></div><div class="recent-time">오전 8:16</div></div>
+      </div>
+
+      <div id="phone-tab-contacts" class="app-body" style="padding:16px; padding-bottom:60px; display:none;">
+        <div style="margin-bottom:12px; font-weight:bold; color:#888; font-size:12px;">연락처</div>
+        <div style="padding:10px 0; border-bottom:1px solid #27272a;">내 곰팅이 (00-1992-0116)</div>
+        <div style="padding:10px 0; border-bottom:1px solid #27272a;">강브라</div>
+        <div style="padding:10px 0; border-bottom:1px solid #27272a;">원필이 형</div>
+        <div style="padding:10px 0; border-bottom:1px solid #27272a;">어무이</div>
+        <div style="padding:10px 0; border-bottom:1px solid #27272a;">엄마</div>
+      </div>
+
+      <div class="phone-tabbar">
+        <div id="phone-btn-keypad" class="phone-tab active" onclick="switchPhoneTab('keypad')">⌨️ 키패드</div>
+        <div id="phone-btn-recents" class="phone-tab" onclick="switchPhoneTab('recents')">🕒 최근기록</div>
+        <div id="phone-btn-contacts" class="phone-tab" onclick="switchPhoneTab('contacts')">👥 연락처</div>
+      </div>
+    </div>
+
+    <!-- 6. 메시지 앱 -->
+    <div id="msg-app" class="app-window">
+      <div class="app-header">
+        <span>메시지</span>
+        <button class="app-close-btn" onclick="closeApp('msg-app')">✕</button>
+      </div>
+      <div class="app-body" style="padding:0;">
+        <div class="msg-thread-item" onclick="openMsgChat('내 곰팅이')">
+          <div class="msg-avatar" style="background:#f59e0b;">곰</div>
+          <div class="msg-thread-info">
+            <div class="msg-thread-header">
+              <span class="msg-thread-name">내 곰팅이</span>
+              <span class="msg-thread-time">10월 20일</span>
+            </div>
+            <div class="msg-thread-preview">내도 윤도운 보고 싶다</div>
+          </div>
+        </div>
+
+        <div class="msg-thread-item" onclick="openMsgChat('강브라')">
+          <div class="msg-avatar" style="background:#3b82f6;">강</div>
+          <div class="msg-thread-info">
+            <div class="msg-thread-header">
+              <span class="msg-thread-name">강브라</span>
+              <span class="msg-thread-time">10월 16일</span>
+            </div>
+            <div class="msg-thread-preview">5분</div>
+          </div>
+        </div>
+
+        <div class="msg-thread-item" onclick="openMsgChat('자재 최 사장님')">
+          <div class="msg-avatar" style="background:#10b981;">최</div>
+          <div class="msg-thread-info">
+            <div class="msg-thread-header">
+              <span class="msg-thread-name">자재 최 사장님</span>
+              <span class="msg-thread-time">10월 14일</span>
+            </div>
+            <div class="msg-thread-preview">예~^^</div>
+          </div>
+        </div>
+
+        <div class="msg-thread-item" onclick="openMsgChat('대한통운')">
+          <div class="msg-avatar" style="background:#ef4444;">CJ</div>
+          <div class="msg-thread-info">
+            <div class="msg-thread-header">
+              <span class="msg-thread-name">대한통운</span>
+              <span class="msg-thread-time">10월 6일</span>
+            </div>
+            <div class="msg-thread-preview">[CJ대한통운] 고객님의 상품을 배송할 예정입니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Gemini 앱 -->
+    <div id="gemini-app" class="app-window" style="background: #090d16; padding-bottom: 0;">
+      <div class="app-header" style="background: #0f172a; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <span style="color:#60a5fa; font-weight:bold;">✨ Gemini</span>
+        <button class="app-close-btn" style="color:#fff;" onclick="closeApp('gemini-app')">✕</button>
+      </div>
+      <div class="app-body" style="padding:12px; display:flex; flex-direction:column; padding-bottom: 70px;">
+        
+        <div class="gemini-user-msg">33세 남자한테 프로포즈 멋지게 하는 방법</div>
+        
+        <div class="gemini-ai-msg">
+          33세 남성을 위한 로맨틱하고 잊지 못할 프로포즈 방법을 몇 가지 스타일별로 정리해 드립니다. 상대방의 성향(실용적 vs 감성적)에 맞게 참고해 보세요!<br><br>
+          
+          <strong>1. 두 사람의 추억이 담긴 '타임라인 프로포즈' (감동형)</strong><br>
+          30대 초반인 만큼, 그동안 함께 쌓아온 시간과 추억을 되짚어보는 방식은 깊은 울림을 줍니다.<br>
+          • <strong>방법:</strong> 두 사람이 처음 만났던 장소, 자주 가던 데이트 코스, 혹은 의미 있는 장소들을 차례로 방문합니다.<br>
+          • <strong>포인트:</strong> 각 장소마다 편지나 작은 선물을 준비해 두거나, 마지막 장소(예: 야경이 예쁜 루프탑 바, 둘만의 아늑한 공간)에서 진심 어린 편지와 함께 반지를 건네며 프로포즈를 합니다.<br>
+          • <strong>어울리는 대사:</strong> "우리가 함께 걸어온 이 길처럼, 앞으로의 남은 인생도 나랑 같이 걸어주라."<br><br>
+
+          <strong>2. 둘만의 오붓한 공간에서 즐기는 '홈스토랑 & 시네마 프로포즈' (프라이빗형)</strong><br>
+          사람이 많은 공개된 장소보다는 아늑하고 편안한 분위기를 선호한다면 집이나 프라이빗 룸을 꾸미는 것이 좋습니다.<br>
+          • <strong>방법:</strong> 직접 요리하거나 정성스레 포장한 음식을 준비하고, 거실이나 방을 은은한 조명(캔들, 꼬마 전구)과 풍선으로 꾸밉니다.<br>
+          • <strong>포인트:</strong> 그동안 찍은 사진과 영상들을 모아 3분짜리 짧은 편집 영상을 만들어 보여주세요. 영상이 끝날 때쯤 자연스럽게 프로포즈로 이어지면 성공률이 매우 높습니다.<br>
+          • <strong>어울리는 대사:</strong> "앞으로 매일 아침을 너와 함께 맞이하고 싶어. 나와 결혼해 줄래?"<br><br>
+
+          <strong>3. 로맨틱한 '호캉스 & 야경 프로포즈' (서프라이즈형)</strong><br>
+          분위기 좋은 호텔이나 뷰가 멋진 숙소를 예약해 일상에서 벗어난 특별한 하루를 선물하는 방법입니다.<br>
+          • <strong>방법:</strong> 체크인 후 자연스럽게 방으로 들어가게 유도합니다. 미리 준비해 둔 꽃다발과 반지, 그리고 손편지가 침대나 테이블 위에 놓여 있게 합니다.<br>
+          • <strong>포인트:</strong> 창밖의 야경을 배경으로 샴페인이나 와인을 가볍게 즐기며 진솔한 이야기를 나누다가 프로포즈를 건네면 자연스럽고 고급스러운 분위기를 연출할 수 있습니다.<br>
+          • <strong>어울리는 대사:</strong> "오늘처럼 특별한 날뿐만 아니라, 평범한 일상도 너와 함께라면 다 특별할 것 같아."<br><br>
+
+          💡 <strong>33세 남성을 위한 성공적인 프로포즈 팁</strong><br>
+          1. <strong>실용적인 선물 매칭:</strong> 반지만큼이나 상대가 평소에 갖고 싶어 했던 시계, 지갑, 혹은 취미 용품 등을 센스 있는 작은 선물로 곁들이면 감동이 배가 됩니다.<br>
+          2. <strong>진심이 담긴 손편지:</strong> 화려한 이벤트보다도 "왜 이 사람과 결혼하고 싶은지", "앞으로 어떻게 함께 행복하고 싶은지" 진심을 담은 손편지가 30대 남성에게 가장 큰 감동을 줍니다.<br><br>
+
+          어떤 스타일에 가장 마음이 가시나요? 혹시 상대방의 취향이나 구체적인 상황을 알려주시면 더 딱 맞는 아이디어를 추천해 드릴게요!
+        </div>
+
+      </div>
+
+      <!-- Gemini 입력창 영역 -->
+      <div style="position: absolute; bottom: 32px; left: 0; width: 100%; padding: 8px 12px; background: #090d16; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px;">
+        <input type="text" value="와 다 싫어할 것 같은데..." style="flex: 1; height: 38px; background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 0 14px; color: #f1f5f9; font-size: 13px; outline: none;">
+        <button style="background: #3b82f6; border: none; width: 34px; height: 34px; border-radius: 50%; color: #fff; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center;">➔</button>
+      </div>
+    </div>
+
+    <!-- 카카오톡 개별 채팅방 -->
+    <div id="kakao-chat-room" class="chat-room-window">
+      <div class="chat-header">
+        <button class="chat-back-btn" onclick="closeKakaoChat()">〈</button>
+        <span id="kakao-chat-title">대화방</span>
+      </div>
+      <div class="chat-messages" id="kakao-msg-container"></div>
+      <div class="chat-input-area">
+        <input type="text" id="kakao-chat-input" class="chat-input" placeholder="메시지 입력..." onkeypress="handleKakaoEnter(event)">
+        <button class="chat-send-btn" onclick="sendKakaoMessage()">전송</button>
+      </div>
+    </div>
+
+    <!-- 메시지 개별 대화방 -->
+    <div id="msg-chat-room" class="chat-room-window" style="background:#18181b;">
+      <div class="chat-header" style="background:#27272a; color:#fff;">
+        <button class="chat-back-btn" style="color:#fff;" onclick="closeMsgChat()">〈</button>
+        <span id="msg-chat-title" style="color:#fff;">대화방</span>
+      </div>
+      <div class="chat-messages" id="msg-container"></div>
+    </div>
+
+    <!-- 전화 수신 화면 -->
+    <div id="incoming-call" class="call-overlay">
+      <div style="text-align:center;">
+        <div style="font-size:14px; color:#94a3b8; margin-bottom:8px;">수신 전화</div>
+        <div style="font-size:24px; font-weight:bold;" id="call-caller-name">내 곰팅이</div>
+        <div style="font-size:13px; color:#64748b; margin-top:4px;">010-XXXX-XXXX</div>
+      </div>
+      <img id="call-caller-img" src="friend1.jpg" class="call-avatar">
+      <div class="call-actions">
+        <div class="call-action-btn call-reject" onclick="endCall()">📵</div>
+        <div class="call-action-btn call-accept" onclick="acceptCall()">📞</div>
+      </div>
+    </div>
+
+    <!-- 사진 확대 팝업 -->
+    <div id="photo-modal" class="photo-modal" onclick="this.style.display='none'">
+      <img id="modal-img" src="">
+    </div>
+
+    <!-- 갤럭시 하단 네비게이션 바 -->
+    <div class="nav-bar">
+      <div class="nav-btn" onclick="closeAllApps()"></div>
+      <div class="nav-btn nav-home" onclick="closeAllApps()"></div>
+      <div class="nav-btn" onclick="closeAllApps()"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // 시각: 오후 8시(20시) 기준 실시간 분 흐름 / 날짜: 10월 20일 (화) 고정
+    function updateTime() {
+      const now = new Date();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `20:${minutes}`;
+      const dateStr = `10월 20일 (화)`;
+
+      document.getElementById('current-time').innerText = timeStr;
+      document.getElementById('widget-time').innerText = timeStr;
+      document.getElementById('lock-time').innerText = timeStr;
+      
+      document.querySelector('.widget-clock .date').innerText = dateStr;
+      document.querySelector('.lock-clock .lock-date').innerText = dateStr;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // 비밀번호 (PIN) 로직
+    let enteredPin = "";
+    function pressPin(num) {
+      if (enteredPin.length < 4) {
+        enteredPin += num;
+        updatePinDots();
+        if (enteredPin.length === 4) {
+          setTimeout(checkPin, 150);
+        }
+      }
+    }
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < enteredPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+      }
+    }
+    function clearPin() {
+      enteredPin = "";
+      updatePinDots();
+    }
+    function checkPin() {
+      document.getElementById('lock-screen').style.display = 'none';
+      clearPin();
+    }
+
+    // 앱 열기/닫기
+    function openApp(id) {
+      document.getElementById(id).style.display = 'flex';
+    }
+    function closeApp(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+    function closeAllApps() {
+      const apps = document.querySelectorAll('.app-window');
+      apps.forEach(app => app.style.display = 'none');
+      closeKakaoChat();
+      closeMsgChat();
+      toggleSearchHistory(false);
+    }
+
+    // 사진 확대
+    function zoomPhoto(src) {
+      document.getElementById('modal-img').src = src;
+      document.getElementById('photo-modal').style.display = 'flex';
+    }
+
+    // 카카오톡 탭
+    function switchKakaoTab(tab) {
+      if (tab === 'friends') {
+        document.getElementById('kakao-tab-friends').style.display = 'block';
+        document.getElementById('kakao-tab-chats').style.display = 'none';
+        document.getElementById('tab-btn-friends').classList.add('active');
+        document.getElementById('tab-btn-chats').classList.remove('active');
+        document.getElementById('kakao-header-title').innerText = '친구';
+      } else {
+        document.getElementById('kakao-tab-friends').style.display = 'none';
+        document.getElementById('kakao-tab-chats').style.display = 'block';
+        document.getElementById('tab-btn-friends').classList.remove('active');
+        document.getElementById('tab-btn-chats').classList.add('active');
+        document.getElementById('kakao-header-title').innerText = '채팅';
+      }
+    }
+
+    // 카카오톡 대화 데이터
+    const kakaoData = {
+      '내 곰팅이': [
+        { type: 'date', text: '2026년 9월 30일 수요일' },
+        { type: 'incoming', text: '운아 델러 가까', time: '오후 6:00' },
+        { type: 'outgoing', text: '아ㅜㅜ 내 오늘 야근 잡혔다ㅜㅜ', time: '오후 6:01' },
+        { type: 'incoming', text: '또? 거긴 뭐 맨날 야근을 시키노', time: '오후 6:01' },
+        { type: 'outgoing', text: '대머리 과장 시키 맨날 지만 일찍 가고!!!!', time: '오후 6:02' },
+        { type: 'incoming', text: '나오기 전에 전화해', time: '오후 6:03' },
+        { type: 'outgoing', text: '웅...', time: '오후 6:03' },
+
+        { type: 'date', text: '2026년 10월 1일 목요일' },
+        { type: 'incoming', text: '인났나', time: '오전 7:30' },
+        { type: 'outgoing', text: '어엉... 출근하기 싫다...', time: '오전 7:31' },
+        { type: 'incoming', text: 'ㅋㅋㅋㅋ어여 인나세요~', time: '오전 7:31' },
+        { type: 'outgoing', text: '햄아 꼭 가야하나', time: '오전 7:32' },
+        { type: 'outgoing', text: '꼭 가야겠지 인났다', time: '오전 7:32' },
+        { type: 'incoming', text: '오야 장하다', time: '오전 7:33' },
+
+        { type: 'date', text: '2026년 10월 6일 화요일' },
+        { type: 'outgoing', text: '햄아 집에 머 시킷나', time: '오전 11:30' },
+        { type: 'incoming', text: '아니? 아', time: '오전 11:31' },
+        { type: 'outgoing', text: '??', time: '오전 11:31' },
+        { type: 'incoming', text: '엄마가 뭐 보냈다카더니만', time: '오전 11:32' },
+        { type: 'outgoing', text: '구래? 알따~', time: '오전 11:32' },
+
+        { type: 'date', text: '2026년 10월 9일 금요일' },
+        { type: 'outgoing', text: '햄아', time: '오후 4:20' },
+        { type: 'incoming', text: '오야', time: '오후 4:20' },
+        { type: 'outgoing', text: '오늘은 꼭 술을 마셔야겠다', time: '오후 4:21' },
+        { type: 'incoming', text: 'ㅋㅋㅋㅋ와 누가 힘들게 하나', time: '오후 4:21' },
+        { type: 'outgoing', text: '내가 좀따 얘기해주께', time: '오후 4:22' },
+        { type: 'incoming', text: '오늘은 칼퇴?', time: '오후 4:22' },
+        { type: 'outgoing', text: '무조건.', time: '오후 4:23' },
+        { type: 'incoming', text: '오야 밑에 있을게', time: '오후 4:23' },
+
+        { type: 'date', text: '2026년 10월 14일 수요일' },
+        { type: 'incoming', text: '운이 점심은? 오늘 출장 간다하더니 잘 챙깃나', time: '오후 1:16' },
+        { type: 'outgoing', text: '죽겠다.......', time: '오후 1:17' },
+        { type: 'incoming', text: '하이고 죽어가네 죽어가', time: '오후 1:17' },
+        { type: 'outgoing', text: '햄아 내 진짜 고마 확 사표내까', time: '오후 1:18' },
+        { type: 'incoming', text: '시원하게 내뿌라', time: '오후 1:18' },
+        { type: 'outgoing', text: '하씨 또 부른다 아오 내 가께 안녕', time: '오후 1:19' },
+        { type: 'incoming', text: '너무 무리하지 말고', time: '오후 1:20' },
+
+        { type: 'date', text: '2026년 10월 20일 화요일' },
+        { type: 'incoming', text: '윤도운 씨~ 회식 언제 끝납니꺼~', time: '오후 8:25' },
+        { type: 'outgoing', text: '내도 집에 가고 싶다 햄아 제발 날 꺼내도', time: '오후 8:25' },
+        { type: 'incoming', text: 'ㅋㅋㅋㅋ아직 멀었나?', time: '오후 8:25' },
+        { type: 'outgoing', text: '저 인간들 오늘 끝장을 보는 것 같다 화요일인데...', time: '오후 8:26' },
+        { type: 'incoming', text: '파할 것 같음 전화해 곧장 나가께', time: '오후 8:26' },
+        { type: 'outgoing', text: '햄도 쉬어야지...ㅜㅜ', time: '오후 8:26' },
+        { type: 'incoming', text: '니 보는 게 쉬는 건데 뭘 전화도', time: '오후 8:26' }
+      ],
+      '강브라': [
+        { type: 'date', text: '2026년 10월 6일 화요일' },
+        { type: 'outgoing', text: '강브라', time: '오후 7:19' },
+        { type: 'incoming', text: '왜왜왜', time: '오후 7:19' },
+        { type: 'outgoing', text: '혹시 꽃게 물래? 어무이가 보내주셨는데 우리끼리 먹긴 많지 싶다', time: '오후 7:20' },
+        { type: 'incoming', text: '오 어머니 나이스~ 지금 가?', time: '오후 7:20' },
+        { type: 'outgoing', text: 'ㅇㅇ 원필이 형은?', time: '오후 7:21' },
+        { type: 'incoming', text: '몰라.', time: '오후 7:21' },
+        { type: 'outgoing', text: '또 싸웠나;;', time: '오후 7:22' },
+        { type: 'incoming', text: '이번엔 내 잘못 아니야. 일단 감', time: '오후 7:22' },
+
+        { type: 'date', text: '2026년 10월 16일 금요일' },
+        { type: 'incoming', text: '오늘 나랑 저녁 먹어줄 윤도운 구함', time: '오후 5:12' },
+        { type: 'outgoing', text: '뭔데 원필이 형은?', time: '오후 5:12' },
+        { type: 'incoming', text: '회식이래...', time: '오후 5:13' },
+        { type: 'outgoing', text: '아 곰팅이도 약속있댔는데 횽아가 놀아주께~ 영혀니~', time: '오후 5:13' },
+        { type: 'incoming', text: '네 형^^', time: '오후 5:14' }
+      ],
+      '원필이형': [
+        { type: 'date', text: '2026년 10월 4일 일요일' },
+        { type: 'incoming', text: '전화했엉??', time: '오후 4:28' },
+        { type: 'outgoing', text: '형 금마 기억나나 그, 그...', time: '오후 4:29' },
+        { type: 'incoming', text: '??', time: '오후 4:29' },
+        { type: 'outgoing', text: '그...! 강브라가 디게 싫어했던', time: '오후 4:30' },
+        { type: 'incoming', text: '민훈이 형?', time: '오후 4:30' },
+        { type: 'outgoing', text: '어!! 금마 결혼한다더라', time: '오후 4:31' },
+        { type: 'incoming', text: '허얼', time: '오후 4:31' },
+        { type: 'incoming', text: '근데 그건 왜?', time: '오후 4:31' },
+        { type: 'outgoing', text: '형 결혼 안 하고 싶나', time: '오후 4:32' },
+        { type: 'incoming', text: 'ㅋㅋ 도우낭 티나.', time: '오후 4:32' },
+        { type: 'outgoing', text: 'ㅇㅋ 미안', time: '오후 4:32' },
+
+        { type: 'date', text: '2026년 10월 6일 화요일' },
+        { type: 'outgoing', text: '왜 싸웠는데', time: '오후 7:40' },
+        { type: 'incoming', text: '형이 그래? 우리 싸웠다고???', time: '오후 7:41' },
+        { type: 'outgoing', text: '아니야...?', time: '오후 7:41' },
+        { type: 'incoming', text: '와하... 이씨 강영현 딱 기다려라', time: '오후 7:42' },
+        { type: 'outgoing', text: '...내가 잘못한 것 같은데', time: '오후 7:42' }
+      ],
+      '어무이': [
+        { type: 'date', text: '2026년 10월 6일 화요일' },
+        { type: 'outgoing', text: '어무이!!!!', time: '오후 6:57' },
+        { type: 'incoming', text: '어엉 도운아~', time: '오후 6:58' },
+        { type: 'outgoing', text: '뭘 이래 보냈으요!! 어무이 쫌 챙겨묵지...', time: '오후 6:58' },
+        { type: 'incoming', text: '너네 잘 먹으면 좋지 뭐얼^^', time: '오후 6:59' },
+        { type: 'outgoing', text: '나중에 꼭 찾아뵐게요 감사해요ㅜㅜ', time: '오후 6:59' },
+        { type: 'incoming', text: '오야~^^', time: '오후 7:00' }
+      ]
+    };
+
+    let activeKakaoTarget = "";
+
+    function openKakaoChat(name) {
+      activeKakaoTarget = name;
+      document.getElementById('kakao-chat-title').innerText = name;
+      const container = document.getElementById('kakao-msg-container');
+      container.innerHTML = "";
+
+      const msgs = kakaoData[name] || [];
+      msgs.forEach(m => {
+        if (m.type === 'date') {
+          const div = document.createElement('div');
+          div.className = 'date-divider';
+          div.innerText = m.text;
+          container.appendChild(div);
+        } else {
+          appendMessage(container, m.type, m.text, m.time);
+        }
+      });
+
+      document.getElementById('kakao-chat-room').style.display = 'flex';
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function closeKakaoChat() {
+      document.getElementById('kakao-chat-room').style.display = 'none';
+    }
+
+    function appendMessage(container, type, text, time) {
+      const group = document.createElement('div');
+      group.className = `msg-group ${type}`;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'bubble-wrapper';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerText = text;
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'timestamp';
+      timeSpan.innerText = time;
+
+      wrapper.appendChild(bubble);
+      wrapper.appendChild(timeSpan);
+      group.appendChild(wrapper);
+      container.appendChild(group);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendKakaoMessage() {
+      const input = document.getElementById('kakao-chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const container = document.getElementById('kakao-msg-container');
+      const now = new Date();
+      const timeStr = `오후 ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      appendMessage(container, 'outgoing', text, timeStr);
+      input.value = '';
+
+      if (activeKakaoTarget === '내 곰팅이') {
+        setTimeout(() => {
+          triggerIncomingCall('내 곰팅이', 'friend1.jpg');
+        }, 1200);
+      }
+    }
+
+    function handleKakaoEnter(e) {
+      if (e.key === 'Enter') sendKakaoMessage();
+    }
+
+    // 네이버 검색
+    function toggleSearchHistory(show) {
+      document.getElementById('search-dropdown').style.display = show ? 'flex' : 'none';
+    }
+    function selectSearch(term) {
+      document.getElementById('naver-input').value = term;
+      toggleSearchHistory(false);
+    }
+
+    // 전화 키패드
+    let dialNumber = "";
+    function pressDial(num) {
+      dialNumber += num;
+      document.getElementById('phone-dial-display').innerText = dialNumber;
+    }
+    function makeOutgoingCall() {
+      if (dialNumber === '00-1992-0116' || dialNumber === '0019920116') {
+        alert("내 곰팅이 님에게 전화를 연결합니다...");
+        dialNumber = "";
+        document.getElementById('phone-dial-display').innerText = "";
+      } else if (dialNumber.length > 0) {
+        alert(`${dialNumber} 번호로 연결 중...`);
+        dialNumber = "";
+        document.getElementById('phone-dial-display').innerText = "";
+      }
+    }
+    function switchPhoneTab(tab) {
+      document.getElementById('phone-tab-keypad').style.display = tab === 'keypad' ? 'flex' : 'none';
+      document.getElementById('phone-tab-recents').style.display = tab === 'recents' ? 'block' : 'none';
+      document.getElementById('phone-tab-contacts').style.display = tab === 'contacts' ? 'block' : 'none';
+
+      document.getElementById('phone-btn-keypad').classList.toggle('active', tab === 'keypad');
+      document.getElementById('phone-btn-recents').classList.toggle('active', tab === 'recents');
+      document.getElementById('phone-btn-contacts').classList.toggle('active', tab === 'contacts');
+    }
+
+    // 메시지 앱 데이터
+    const msgData = {
+      '대한통운': [
+        { type: 'date', text: '2026년 10월 6일 화요일' },
+        { type: 'incoming', text: '[CJ대한통운]\n고객님의 상품을 배송할 예정입니다.\n보내는 분 : 경숙\n상품명 : 수산물\n배송예정시간 : 14~16시\n배송기사 : 홍길동 ☎ 010-0000-0000', time: '오전 11:25' }
+      ],
+      '자재 최 사장님': [
+        { type: 'date', text: '2026년 10월 14일 수요일' },
+        { type: 'outgoing', text: '확인 감사합니다! 점심 맛있게 드세요~!', time: '오후 12:20' },
+        { type: 'incoming', text: '예~^^', time: '오후 12:21' }
+      ],
+      '강브라': [
+        { type: 'date', text: '2026년 10월 16일 금요일' },
+        { type: 'outgoing', text: 'ㅇㄷ', time: '오후 6:19' },
+        { type: 'incoming', text: '5분', time: '오후 6:20' }
+      ],
+      '내 곰팅이': [
+        { type: 'date', text: '2026년 10월 20일 화요일' },
+        { type: 'outgoing', text: '회식... 잡혔다...', time: '오후 5:40' },
+        { type: 'incoming', text: '하이고 기왕 간 거 맛난 거 묵고 와', time: '오후 5:41' },
+        { type: 'outgoing', text: '앉자마자 소주를 따라뿌는데', time: '오후 6:38' },
+        { type: 'incoming', text: '티 안 나게 버려라 많이 마시지 마', time: '오후 6:39' },
+        { type: 'outgoing', text: '집에 가고 싶다 햄아 보고 싶어', time: '오후 7:29' },
+        { type: 'incoming', text: '내도 윤도운 보고 싶다', time: '오후 7:30' }
+      ]
+    };
+
+    function openMsgChat(name) {
+      document.getElementById('msg-chat-title').innerText = name;
+      const container = document.getElementById('msg-container');
+      container.innerHTML = "";
+
+      const msgs = msgData[name] || [];
+      msgs.forEach(m => {
+        if (m.type === 'date') {
+          const div = document.createElement('div');
+          div.className = 'date-divider';
+          div.style.color = '#aaa';
+          div.style.background = 'rgba(255,255,255,0.1)';
+          div.innerText = m.text;
+          container.appendChild(div);
+        } else {
+          appendMessage(container, m.type, m.text, m.time);
+        }
+      });
+
+      document.getElementById('msg-chat-room').style.display = 'flex';
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function closeMsgChat() {
+      document.getElementById('msg-chat-room').style.display = 'none';
+    }
+
+    // 전화 오기 연동
+    function triggerIncomingCall(name, imgSrc) {
+      document.getElementById('call-caller-name').innerText = name;
+      document.getElementById('call-caller-img').src = imgSrc;
+      document.getElementById('incoming-call').style.display = 'flex';
+    }
+
+    function endCall() {
+      document.getElementById('incoming-call').style.display = 'none';
+    }
+
+    function acceptCall() {
+      alert("통화가 연결되었습니다.");
+      endCall();
+    }
+  </script>
+</body>
+</html>
